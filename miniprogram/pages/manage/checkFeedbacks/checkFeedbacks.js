@@ -2,10 +2,10 @@
 import { formatDate } from "../../../utils/utils";
 import { requestNotice, getMsgTplId } from "../../../utils/msg";
 import { checkAuth, fillUserInfo } from "../../../utils/user";
-import { cloud } from "../../../utils/cloudAccess";
 import api from "../../../utils/cloudApi";
 
 const step = 6;
+const app = getApp();
 
 Page({
 
@@ -13,8 +13,6 @@ Page({
    * 页面的初始数据
    */
   data: {
-    tipText: '正在鉴权...',
-    tipBtn: false,
     feedbacks: [],
     total: 0,
     checkHistory: false,
@@ -26,30 +24,45 @@ Page({
   onLoad: async function (options) {
     if (await checkAuth(this, 1)) {
       this.reload();
+      // 监听反馈更新时间
+      app.globalData.eventBus.$on('feedbackUpdated', this.handleFeedbackUpdate);
     }
   },
-
-  // 没有权限，返回上一页
-  goBack() {
-    wx.navigateBack();
+  handleFeedbackUpdate: function(payload) {
+    console.log('收到反馈更新事件:', payload);
+    
+    // 更新特定反馈项
+    const feedbacks = this.data.feedbacks.map(fb => {
+      if (fb._id === payload.id) {
+        return {
+          ...fb,
+          replied: true,
+          replyDate: new Date(),
+          replyDateStr: formatDate(new Date(), "yyyy-MM-dd hh:mm:ss"),
+          replyInfo: payload.replyInfo
+        };
+      }
+      return fb;
+    });
+    
+    this.setData({ feedbacks });
   },
 
+
+
   async loadFeedbacks() {
-    const db = await cloud.databaseAsync();
     const nowLoaded = this.data.feedbacks.length;
-    var feedbacks = (await db.collection('feedback').where({
-      dealed: this.data.checkHistory
-    }).orderBy('openDate', 'desc').skip(nowLoaded).limit(step).get()).data;
+    var { result: feedbacks } = await app.mpServerless.db.collection('feedback').find({ dealed: this.data.checkHistory }, { sort: { openDate: -1 }, skip: nowLoaded, limit: step })
     console.log("[loadFeedbacks] -", feedbacks);
     // 填充userInfo
     await fillUserInfo(feedbacks, "openid", "userInfo");
     // 获取对应猫猫信息；将Date对象转化为字符串；判断是否已回复
     for (let i = 0; i < feedbacks.length; ++i) {
       if (feedbacks[i].cat_id != undefined) {
-        feedbacks[i].cat = (await db.collection('cat').doc(feedbacks[i].cat_id).field({
-          name: true,
-          campus: true
-        }).get()).data;
+        const { result: cat } = await app.mpServerless.db.collection('cat').findOne({ _id: feedbacks[i].cat_id }, {
+          projection: { name: 1, campus: 1 }
+        })
+        feedbacks[i].cat = cat;
       }
       feedbacks[i].openDateStr = formatDate(feedbacks[i].openDate, "yyyy-MM-dd hh:mm:ss");
       feedbacks[i].replied = feedbacks[i].hasOwnProperty('replyDate');
@@ -63,19 +76,18 @@ Page({
     });
   },
 
-  async refreshStatus(){
+  async refreshStatus() {
     await this.requestSubscribeMessage();
     await this.reload();
   },
-  
+
   async reload() {
     wx.showLoading({
       title: '加载中...',
     });
-    const db = await cloud.databaseAsync();
-    var fbRes = await db.collection('feedback').where({
+    var { result: fbRes } = await app.mpServerless.db.collection('feedback').count({
       dealed: this.data.checkHistory
-    }).count();
+    });
 
     console.log("[reload] - feedbacks: ", fbRes);
     this.setData({
@@ -106,8 +118,8 @@ Page({
           }
         }
       },
-      complete:res=>{
-        console.log("[requestSubscribeMessage] - complete:",res);
+      complete: res => {
+        console.log("[requestSubscribeMessage] - complete:", res);
       }
     })
   },
@@ -185,7 +197,7 @@ Page({
   toCatManage(e) {
     const cat_id = e.currentTarget.dataset.cat_id;
     wx.navigateTo({
-      url: '/pages/manage/addCat/addCat?cat_id=' + cat_id,
+      url: '/pages/manage/catManage/catManage?cat_id=' + cat_id + '&activeTab=info',
     });
   },
 

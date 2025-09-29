@@ -1,6 +1,5 @@
 // pages/manage/badgeCode/badgeCode.ts
 import { checkAuth } from "../../../utils/user";
-import { cloud } from "../../../utils/cloudAccess";
 import { formatDate } from "../../../utils/utils";
 import api from "../../../utils/cloudApi";
 
@@ -11,8 +10,7 @@ Page({
    * 页面的初始数据
    */
   data: {
-    tipText: '正在鉴权...',
-    tipBtn: false,
+    
   },
 
   jsData: {
@@ -44,11 +42,10 @@ Page({
     }
     this.jsData.reloading = true;
     let codes = this.jsData.codes;
-    const newCodes = (await api.loadBadgeCode({
+    const newCodes = await api.loadBadgeCode({
       skip: codes.length,
-      orderBy: [['genTime', 'desc']],
-      limit: 30,
-    })).result.data;
+      limit: 30
+    });
 
     this.jsData.codes = codes.concat(newCodes);
     console.log(this.jsData.codes);

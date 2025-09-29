@@ -6,7 +6,7 @@ Component({
   properties: {
     show: {
       type: Boolean,
-      value: true,
+      value: false,
     },
     zindex: {
       type: Number,
@@ -53,7 +53,7 @@ Component({
       this.setData({
         show: false,
       });
-      this.triggerEvent('close', {});
+      this.triggerEvent('close');
     },
   }
 })

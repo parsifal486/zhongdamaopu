@@ -1,6 +1,5 @@
 import { likeAdd, likeCheck } from "../../../utils/inter";
-import { cloud } from "../../../utils/cloudAccess";
-
+import { downloadFile } from "../../../utils/common"
 module.exports =
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -137,7 +136,11 @@ Component({
         extClass: {
             type: Boolean,
             value: ''
-        }
+        },
+        cat: {
+            type: Object,
+            value: null
+        },
     },
     data: {
         canReverse: false,  // 是否可以取消点赞
@@ -212,37 +215,43 @@ Component({
         async bindGalleryLongPress(e) {
             const that = this;
             wx.showActionSheet({
-            itemList: ['保存（压缩图）'],
-            async success(res) {
-                // 用户选择取消时不会回调success，不过还是判断一下吧
-                if (res.tapIndex == 0) {
-                console.log('保存图片');
-                wx.showLoading({
-                    title: '正在保存...',
-                    mask: true,
-                })
-                let downloadRes = await cloud.downloadFile({
-                    fileID: that.data.imgUrls[that.data.current],
-                });
-                wx.hideLoading();
-                if (downloadRes.errMsg == 'downloadFile:ok') {
-                    wx.saveImageToPhotosAlbum({
-                    filePath: downloadRes.tempFilePath,
-                    success(res) {
-                        wx.showToast({
-                        title: '已保存到相册',
-                        icon: 'success',
+                itemList: ['保存（压缩图）'],
+                async success(res) {
+                    // 用户选择取消时不会回调success，不过还是判断一下吧
+                    if (res.tapIndex == 0) {
+                        console.log('保存图片');
+                        wx.showLoading({
+                            title: '正在保存...',
+                            mask: true,
                         })
+                        let downloadRes = await downloadFile(that.data.imgUrls[that.data.current]);
+                        console.log('downloadFile', downloadRes);
+                        wx.hideLoading();
+                        if (downloadRes) {
+                            wx.saveImageToPhotosAlbum({
+                                filePath: downloadRes.tempFilePath,
+                                success(res) {
+                                    wx.showToast({
+                                        title: '已保存到相册',
+                                        icon: 'success',
+                                    })
+                                }
+                            });
+                        } else {
+                            console.log(downloadRes);
+                        }
                     }
-                    });
-                } else {
-                    console.log(downloadRes);
-                }
-                }
-            },
+                },
             });
         },
 
+        // 展示分享海报
+        async showPoster() {
+            let posterComponent = this.selectComponent('#posterComponent');
+            if (posterComponent) {
+            posterComponent.startDrawing();
+            }
+        }
     }
 });
 

@@ -22,13 +22,21 @@
 ## 体验一下
 打开微信，扫码或搜索“笃行猫谱”（原名中大猫谱，23年底更名）。
 
-<img src="./readme/qrcode1.png" height = "150" alt="中大猫谱菊花码" />
+<img src="./readme/qrcode1.png" height = "150" alt="笃行猫谱菊花码" />
 
 ### 朋友们的小程序
 
-|<img src="./readme/qrcode2.png" height = "100" alt="华农喵星人菊花码" />|<img src="./readme/qrcodeHNU.jpg" height = "100" alt="HNU喵汪图鉴菊花码" />|<img src="./readme/qrcodeCMZJ.png" height = "100" alt="财猫之家菊花码" />|<img src="./readme/qrcodeESMY.jpg" height = "100" alt="二师猫语菊花码" />|
-|:----:|:----:|:----:|:----:|
-|华农喵星人|HNU喵汪图鉴|财猫之家|二师猫语|
+|小程序|高校|二维码|小程序|高校|二维码|
+|:----:|:----:|:----:|:----:|:----:|:----:|
+|CQGCZY小猫之家|重庆工程职业技术学院|<img src="./readme/wx965de1cc7764cc8c.jpg" height = "100" />|莲峰猫谱|电子科技大学中山学院|<img src="./readme/wxe214252bcfc57eb1.png" height = "100" />|
+|昆院猫谱|昆明学院KMU|<img src="./readme/wx49ce23a5956ba016.jpg" height = "100" />|猫猫家谱|暨南大学|<img src="./readme/wxd78f5d698fc51b30.jpg" height = "100" />|
+|火大猫谱|火箭军工程大学|<img src="./readme/wx5d52c6c8f098ed5e.png" height = "100" />|CW猫咪图鉴|重庆外语外事学院|<img src="./readme/wxf5a6690aef6de08a.jpg" height = "100" />|
+|龙井是公猫|广东药科大学|<img src="./readme/wxa4ff57cbf8569fbd.png" height = "100" />|技大喵喵屋|深圳技术大学|<img src="./readme/wxc0e3f6edf308a23e.jpg" height = "100" />|
+|招财喵谱|上海财经大学|<img src="./readme/wxbcf1fbad0db85bb2.jpg" height = "100" />|崴喵猫谱|山东大学（威海）|<img src="./readme/wx13022ccaecca54cc.png" height = "100" />|
+|可每猫咪|河海大学|<img src="./readme/wxeb1cddee1c6c4a87.jpg" height = "100" />|喵汪图鉴|湖南大学|<img src="./readme/wxc91fb069737b7b84.jpeg" height = "100" />|
+|青猫图鉴|青岛大学|<img src="./readme/wx885e9b250c98afc0.png" height = "100" />|小理猫谱|广州理工学院|<img src="./readme/wx0118c66270fec861.jpg" height = "100" />|
+|一喵九鼎图鉴|河南科技大学|<img src="./readme/wx133d7943db9b04f5.jpg" height = "100" />|财猫之家|浙江财经大学|<img src="./readme/qrcodeCMZJ.png" height = "100" />|
+
 
 如果，你所在校园（/社团/小区...）的猫猫:smile_cat:也盼望拥有一份属于自己的猫猫档案，请你跟随下一章节的指引，为它们部署、发布一份独特的猫谱小程序。
 
@@ -41,26 +49,22 @@
 ## 资料整理
 |资料名|类型|链接|
 |:----:|:----:|:----:|
-|猫谱-部署文档|文档|https://docs.qq.com/doc/DSGFvWGF4UnVrQ3VN|
+|猫谱-部署文档|文档|https://docs.qq.com/doc/DSE1vd0p3RERvWXJS|
 |猫谱-管理员手册|文档|https://docs.qq.com/doc/DSEl0aENOSEx5cmtE|
 
 # :scroll:部署
 
 :smirk_cat:*无需从零开始，只要一些耐心。*
 
-Laf版暂时没有录制部署视频，部署流程请参考：[猫谱Laf版文档](https://docs.qq.com/doc/DSGFvWGF4UnVrQ3VN)
+EMAS版暂时没有录制部署视频，部署流程请参考：[猫谱EMAS版文档](https://docs.qq.com/doc/DSE1vd0p3RERvWXJS)
 
-考虑到wx云开发的[新收费标准](https://developers.weixin.qq.com/community/minihome/doc/0000a680588d3891fa2ec250c51401)（约50元/月），我们将代码迁移到[Laf云开发](https://laf.run/signup?code=Ld9h8b4)平台。
-
-    Laf云是一个开源的云开发平台，可以私有部署到自己的服务器上，也可以使用目前Laf官方的付费资源，约13元/月。
-
-国内高校同学可以免费使用，参考文档进行申请：[【腾讯文档】中大猫谱-Laf高校代金券计划](https://docs.qq.com/doc/DSGhxbVhuUnJqaUhF)
+注：考虑到Laf平台不再维护，迁移到阿里云的EMAS Serverless平台，比较稳定。费用每个月：EMAS后端5元左右，腾讯云COS存照片约5元左右。代码迁移过程非常感谢[maopu-EMAS项目](https://github.com/Smileye-v/maopu-EMAS)。
 
 # :dancers:开发团队
 
 本项目的开发工作100%用爱发电，特别感谢每一位为此付出的小伙伴。
 
-:computer:代码开发：[Zing22](https://github.com/Zing22)、[Jazon](https://github.com/jxzhn)、[Junius](https://github.com/JunDeer)、[yw](https://github.com/WondrousWisdomcard)、[Lauzeyu](https://github.com/parsifal486)
+:computer:代码开发：[Zing22](https://github.com/Zing22)、[Jazon](https://github.com/jxzhn)、[Junius](https://github.com/JunDeer)、[yw](https://github.com/WondrousWisdomcard)、[Lauzeyu](https://github.com/parsifal486)、[Smileye-v](https://github.com/Smileye-v)
 
 :black_nib:UI设计：蓝卷、[Junius](https://github.com/JunDeer)、[yw](https://github.com/WondrousWisdomcard)
 

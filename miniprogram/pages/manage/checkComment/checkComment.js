@@ -12,21 +12,16 @@ import {
   getCatItem
 } from "../../../utils/cat";
 import {
-  cloud
-} from "../../../utils/cloudAccess";
-import {
   formatDate
 } from "../../../utils/utils";
 import api from "../../../utils/cloudApi";
-
+const app = getApp();
 Page({
 
   /**
    * 页面的初始数据
    */
   data: {
-    tipText: '正在鉴权...',
-    tipBtn: false,
     campus_list: [],
   },
 
@@ -55,19 +50,20 @@ Page({
 
   async loadComments() {
     // 常用的对象
-    const db = await cloud.databaseAsync();
-    const _ = db.command;
     var comments = [];
-    var qf = {
-      needVerify: _.eq(true),
-      deleted: _.neq(true)
-    };
-    var res = await db.collection('comment').where(qf).orderBy("create_date", "desc").get();
-    console.log(res);
+    var { result } = await app.mpServerless.db.collection('comment').find({
+      needVerify: { $eq: true },
+      deleted: { $ne: true }
+    }, {
+      sort: {
+        create_date: -1
+      }
+    })
+    console.log(result);
 
     // 填充userInfo
-    await fillUserInfo(res.data, "user_openid", "userInfo");
-    for (var item of res.data) {
+    await fillUserInfo(result, "user_openid", "userInfo");
+    for (var item of result) {
       item.datetime = formatDate(new Date(item.create_date), "yyyy-MM-dd hh:mm:ss")
       comments.push(item);
     }
@@ -145,11 +141,6 @@ Page({
     wx.navigateTo({
       url: '/pages/genealogy/detailCat/detailCat?cat_id=' + cat_id,
     })
-  },
-
-  // 没有权限，返回上一页
-  goBack() {
-    wx.navigateBack();
   },
 
   // 确定处理
@@ -240,7 +231,7 @@ Page({
   // 添加一条通知记录，等页面退出的时候统一发送通知
   addNotice(comment, accepted) {
     const openid = comment.user_openid;
-    let {notice_list} = this.jsData;
+    let { notice_list } = this.jsData;
     if (!notice_list[openid]) {
       notice_list[openid] = {
         accepted: 0,

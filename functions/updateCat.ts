@@ -10,7 +10,7 @@ export default async function (ctx: FunctionContext) {
     return "v1.1";
   }
 
-  const openid = ctx.user.openid;
+  const openid = ctx.user?.openid;
 
   const is_manager = await isManager(openid, 2);
   if (!is_manager) {
@@ -50,7 +50,7 @@ function deepcopy(origin) {
   // not for modifying.
   const copyKeys = ['area', 'campus', 'characteristics',
     'colour', 'father', 'gender', 'mother', 'name', 'nickname', 'popularity', 'sterilized', 'adopt',
-    'birthday', 'habit', 'tutorial', 'relation', 'to_star']
+    'missing', 'birthday', 'habit', 'tutorial', 'relation', 'to_star']
   var res = {};
   for (const key of copyKeys) {
     res[key] = origin[key];

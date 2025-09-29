@@ -7,10 +7,16 @@
     </view>
     <input class='name' placeholder='{{text_cfg.genealogy.search_tip}}' placeholder-class='searchPlaceholderStyle' value='{{filters_input}}' maxlength='20' confirm-type='search' bindinput='fSearchInput' bindconfirm='fSearch'></input>
   </view>
+
+  <view class='filter-btn' bind:tap='clickRecognize' wx:if="{{showRecognize}}">
+    <image mode='aspectFit' src="/pages/public/images/filter/recognize.svg"></image>
+    <view>识别</view>
+  </view>
   
-  <view class='filter-btn' bindtap='fToggle'>
+  <view class='filter-btn' bind:tap='fToggle'>
     <image wx:if='{{filters_active}}' mode='aspectFit' src="/pages/public/images/filter/filter_y.png"></image>
     <image wx:else mode='aspectFit' src="/pages/public/images/filter/filter.png"></image>
+    <view>筛选</view>
   </view>
 </view>
 
@@ -64,7 +70,7 @@
       <view class='image {{item.to_star? "to_star": ""}}'>
         <image bindload="bindImageLoaded" mode='aspectFill' src='{{item.photo.photo_compressed || item.photo.photo_id}}' data-index="{{index}}"></image>
         <view class='image-title' wx:if='{{!item.photo_count_best || item.photo_count_best === 0}}'>{{text_cfg.genealogy.no_photo_tip}}</view>
-        <view class='image-title' wx:else>{{item.photo.photo_id? (text_cfg.genealogy.photo_by_tip + (item.photo.photographer ||(item.photo.userInfo? item.photo.userInfo.nickName: text_cfg.genealogy.photo_by_unknow))): text_cfg.genealogy.photo_loading_tip}}</view>
+        <view class='image-title' wx:else>{{item.photo.photo_id? (text_cfg.genealogy.photo_by_tip + (item.photo.photographer ||(item.photo.userInfo? item.photo.userInfo.nickName: text_cfg.genealogy.photo_by_unknow_tip))): text_cfg.genealogy.photo_loading_tip}}</view>
       </view>
       <view class='info' hover-class="hoverInfo">
         <view class='line'>
@@ -76,15 +82,24 @@
           <view wx:if='{{item.adopt}}' class='adopt'>{{adopt_desc[item.adopt]}}</view>
           <view wx:if='{{item.to_star}}' class='to_star'>{{text_cfg.genealogy.to_star_tip}}</view>
           <view class='popularity'>
-            <image src='/pages/public/images/card/card/pop.png'></image>
+            <view class='iconfont icon-fire'></view>
             <text> {{item.popularity + (item.photo_count_total? item.photo_count_total * photoPopWeight: 0) }}</text>
           </view>
           <view class='comment' wx:if="{{item.comment_count}}">
-            <image src='/pages/public/images/card/card/comment.png'></image>
+            <view class='iconfont icon-chat'></view>
             <text> {{item.comment_count}}</text>
           </view>
         </view>
 
+        <view class='line' wx:if="{{item.rating}}">
+          <image mode='aspectFit' class='icon' src='/pages/public/images/card/card/star.png'></image>
+          <view class="stars">
+            <view class="one-star {{item.rating.avgScore >= j+1 ? '' : 'gray'}}"  wx:for="*****" wx:key="*this" wx:for-item="y" wx:for-index="j">
+              <image src="/pages/public/images/button/rating_star.svg" mode="aspectFill"/>
+            </view>
+            <view class="score">{{item.rating.avgScoreDisp || '0.0'}}</view>
+          </view>
+        </view>
         <view class='line' wx:if="{{item.birthday}}">
           <image mode='aspectFit' class='icon' src='/pages/public/images/card/card/birth.png'></image>
           <text>{{item.birthday}}</text>

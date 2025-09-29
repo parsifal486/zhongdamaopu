@@ -23,37 +23,38 @@ import {
 import {
   getGlobalSettings
 } from "../../../utils/page";
-import {
-  cloud
-} from "../../../utils/cloudAccess";
+import { convertRatingList, genDefaultRating } from "../../../utils/rating";
+import { showMpcode } from "../../../utils/mpcode";
+import { signCosUrl } from "../../../utils/common";
 import api from "../../../utils/cloudApi";
 
+const app = getApp();
 
 import { loadUserBadge, loadBadgeDefMap, loadCatBadge, mergeAndSortBadges, } from "../../../utils/badge";
 
-const no_heic = /^((?!\.heic$).)*$/i; // 正则表达式：不以 HEIC 为文件后缀的字符串
+const max_follow_cats = 30; // 最大的猫猫关注数量
 
 // 获取照片的排序功能
 const photoOrder = [{
-    key: 'shooting_date',
-    order: 'desc',
-    name: '最近拍摄'
-  },
-  {
-    key: 'shooting_date',
-    order: 'asc',
-    name: '最早拍摄'
-  },
-  {
-    key: 'mdate',
-    order: 'desc',
-    name: '最近收录'
-  },
-  {
-    key: 'mdate',
-    order: 'asc',
-    name: '最早收录'
-  },
+  key: 'shooting_date',
+  order: 'desc',
+  name: '最近拍摄'
+},
+{
+  key: 'shooting_date',
+  order: 'asc',
+  name: '最早拍摄'
+},
+{
+  key: 'mdate',
+  order: 'desc',
+  name: '最近收录'
+},
+{
+  key: 'mdate',
+  order: 'asc',
+  name: '最早收录'
+},
 ]
 
 Page({
@@ -81,6 +82,13 @@ Page({
     text_cfg: config.text,
 
     activeUserBadge: -1,
+
+    // 是否展开评分详情
+    showDetailRating: false,
+
+    // 疫苗记录相关
+    showVaccineHistory: false,
+    vaccineHistory: [],
   },
 
   jsData: {
@@ -124,7 +132,7 @@ Page({
       });
     }
 
-    // 记录访问时间，消除“有新相片”
+    // 记录访问时间，消除"有新相片"
     // TODO：用cache
     setVisitedDate(this.jsData.cat_id);
   },
@@ -167,7 +175,7 @@ Page({
   /**
    * 生命周期函数--监听页面显示
    */
-  onShow: function () {},
+  onShow: function () { },
 
   /**
    * 生命周期函数--监听页面隐藏
@@ -179,7 +187,7 @@ Page({
   /**
    * 生命周期函数--监听页面卸载
    */
-  onUnload: function () {},
+  onUnload: function () { },
 
   /**
    * 页面相关事件处理函数--监听用户下拉动作
@@ -191,7 +199,7 @@ Page({
   /**
    * 页面上拉触底事件的处理函数
    */
-  onReachBottom: function () {},
+  onReachBottom: function () { },
 
   /**
    * 用户点击右上角分享
@@ -215,12 +223,23 @@ Page({
   },
 
   async loadCat() {
-    const db = await cloud.databaseAsync();
-    const cat = (await db.collection('cat').doc(this.jsData.cat_id).get()).data;
+    const { result: cat } = await app.mpServerless.db.collection('cat').findOne({
+      _id: this.jsData.cat_id
+    });
     cat.photo = [];
-    cat.characteristics_string = (cat.colour || '') + '猫';
+    if (cat.characteristics.length) {
+      cat.characteristics_string = cat.characteristics + '\n';
+    } else {
+      cat.characteristics_string = '';
+    }
+    if (cat.habit) {
+      cat.characteristics_string += cat.habit;
+    }
     cat.avatar = await getAvatar(cat._id, cat.photo_count_best);
 
+    if (cat.rating) {
+      cat.rating.catRatings = convertRatingList(cat.rating.scores);
+    }
     this.setData({
       cat: cat
     });
@@ -228,8 +247,10 @@ Page({
     await Promise.all([
       this.reloadPhotos(),
       this.loadCommentCount(),
+      this.loadFollowCount(),
       this.loadRelations(),
       this.reloadCatBadge(),
+      this.getLatestVaccine(cat._id),
     ]);
 
     var query = wx.createSelectorQuery();
@@ -266,14 +287,12 @@ Page({
 
   async reloadPhotos() {
     // 这些是精选照片
-    const db = await cloud.databaseAsync();
     const qf = {
       cat_id: this.jsData.cat_id,
       verified: true,
-      best: true,
-      photo_id: no_heic
+      best: true
     };
-    this.jsData.photoMax = (await db.collection('photo').where(qf).count()).total;
+    this.jsData.photoMax = (await app.mpServerless.db.collection('photo').count(qf)).result;
     await Promise.all([
       this.loadMorePhotos(),
       this.reloadAlbum(),
@@ -281,22 +300,29 @@ Page({
   },
 
   async loadCommentCount() {
-    const that = this;
-
-    that.setData({
+    this.setData({
       "cat.comment_count": await getCatCommentCount(this.jsData.cat_id)
+    });
+  },
+
+  async loadFollowCount() {
+    const { cat_id } = this.jsData;
+    const { result: total } = await app.mpServerless.db.collection('user').count({
+      followCats: cat_id
+    });
+
+    this.setData({
+      "cat.follow_count": total
     });
   },
 
   async reloadAlbum() {
     // 下面是相册的
-    const db = await cloud.databaseAsync();
     const qf_album = {
       cat_id: this.jsData.cat_id,
-      verified: true,
-      photo_id: no_heic
+      verified: true
     };
-    this.jsData.albumMax = (await db.collection('photo').where(qf_album).count()).total;
+    this.jsData.albumMax = (await app.mpServerless.db.collection('photo').count(qf_album)).result;
     this.jsData.album_raw = [];
     await this.loadMoreAlbum();
     this.setData({
@@ -313,8 +339,7 @@ Page({
     const qf = {
       cat_id: this.jsData.cat_id,
       verified: true,
-      best: true,
-      photo_id: no_heic
+      best: true
     };
     const step = this.jsData.page_settings.photoStep;
     const now = cat.photo.length;
@@ -324,14 +349,26 @@ Page({
     //   mask: true
     // })
 
-    const db = await cloud.databaseAsync();
-    let res = await db.collection('photo').where(qf).orderBy('mdate', 'desc').skip(now).limit(step).get();
+    let { result: res } = await app.mpServerless.db.collection('photo').find(
+      qf,
+      { skip: now, limit: step }
+    )
     console.log("[loadMorePhotos] -", res);
     const offset = cat.photo.length;
-    for (let i = 0; i < res.data.length; ++i) {
-      res.data[i].index = offset + i; // 把index加上，gallery预览要用到
+    for (let i = 0; i < res.length; ++i) {
+      res[i].index = offset + i; // 把index加上，gallery预览要用到
+      // 签名处理
+      if (res[i].photo_id) {
+        res[i].photo_id = await signCosUrl(res[i].photo_id);
+      }
+      if (res[i].photo_compressed) {
+        res[i].photo_compressed = await signCosUrl(res[i].photo_compressed);
+      }
+      if (res[i].photo_watermark) {
+        res[i].photo_watermark = await signCosUrl(res[i].photo_watermark);
+      }
     }
-    cat.photo = cat.photo.concat(res.data);
+    cat.photo = cat.photo.concat(res);
     this.setData({
       cat: cat
     });
@@ -346,6 +383,12 @@ Page({
   bindAddPhoto() {
     wx.navigateTo({
       url: '/pages/genealogy/addPhoto/addPhoto?cat_id=' + this.data.cat._id,
+    });
+  },
+
+  bindRating() {
+    wx.navigateTo({
+      url: '/pages/genealogy/detailCat/ratingDetail/ratingDetail?cat_id=' + this.data.cat._id,
     });
   },
 
@@ -417,33 +460,41 @@ Page({
     }
     const qf = {
       cat_id: this.jsData.cat_id,
-      verified: true,
-      photo_id: no_heic
+      verified: true
     };
     const step = this.jsData.page_settings.albumStep;
     const now = this.jsData.album_raw.length;
 
-    const db = await cloud.databaseAsync();
 
     this.jsData.loadingAlbum = true;
     const orderItem = photoOrder[this.data.photoOrderSelected];
 
     let res;
     if (orderItem.name == "最早收录") {
-      res = await db.collection('photo').where(qf).orderBy(orderItem.key, orderItem.order).skip(now).limit(step).get();
+      res = (await app.mpServerless.db.collection('photo').find(qf, { skip: now, limit: step })).result;
     } else {
-      res = await db.collection('photo').where(qf).orderBy(orderItem.key, orderItem.order).orderBy('mdate', 'desc').skip(now).limit(step).get();
+      res = (await app.mpServerless.db.collection('photo').find(qf, { sort: { shooting_date: -1 }, skip: now, limit: step })).result;
     }
 
     const offset = this.jsData.album_raw.length;
-    for (let i = 0; i < res.data.length; ++i) {
-      res.data[i].index = offset + i; // 把index加上，gallery预览要用到
+    for (let i = 0; i < res.length; ++i) {
+      res[i].index = offset + i; // 把index加上，gallery预览要用到
+      // 签名处理
+      if (res[i].photo_id) {
+        res[i].photo_id = await signCosUrl(res[i].photo_id);
+      }
+      if (res[i].photo_compressed) {
+        res[i].photo_compressed = await signCosUrl(res[i].photo_compressed);
+      }
+      if (res[i].photo_watermark) {
+        res[i].photo_watermark = await signCosUrl(res[i].photo_watermark);
+      }
     }
-    this.jsData.album_raw = this.jsData.album_raw.concat(res.data);
+    this.jsData.album_raw = this.jsData.album_raw.concat(res);
     this.updateAlbum();
   },
 
-  updateAlbum() {
+  async updateAlbum() {
     // 为了页面显示，要把这个结构处理一下
     // 先按日期分类，分为拍摄日期、上传日期
     var orderIdx = this.data.photoOrderSelected;
@@ -468,7 +519,7 @@ Page({
     var result = [];
     var keys = Object.keys(group);
     var order = photoOrder[orderIdx].order == 'asc' ? 1 : -1;
-    keys.sort((a, b) => order * (a - b));
+    keys.sort((a, b) => order * a.localeCompare(b));
     for (const key of keys) {
       const shooting_date = key.split('-');
       var birth = this.data.cat.birthday;
@@ -533,50 +584,14 @@ Page({
   },
 
   // 展示mpcode
-  async bingMpTap(e) {
-    // 直接显示
-    if (this.data.cat.mpcode) {
-      wx.previewImage({
-        urls: [this.data.cat.mpcode],
-      });
-      return false;
-    }
-    // 如果目前没有，那就先生成一个，再显示
-    console.log('[bingMpTap] - 生成mpcode');
-    wx.showLoading({
-      title: '生成ing...',
-    })
-    const cat = this.data.cat;
-    var res = (await api.getMpCode({
-      _id: cat._id,
-      scene: 'toC=' + cat._no,
-      page: 'pages/genealogy/genealogy',
-      width: 500,
-    })).result;
-
-    console.log("mpcode:", res);
-
-    res = await cloud.signCosUrl(res);
-
-    wx.hideLoading();
-    wx.previewImage({
-      urls: [res],
-    });
-    this.setData({
-      'cat.mpcode': res
-    });
+  async bingMpTap() {
+    await showMpcode(this.data.cat);
   },
 
-  showPopularityTip() {
+  showPopTip(e) {
+    let { tip } = e.currentTarget.dataset;
     wx.showToast({
-      title: config.text.detail_cat.popularity_tip,
-      icon: "none"
-    });
-  },
-
-  showCommentTip() {
-    wx.showToast({
-      title: config.text.detail_cat.comment_tip,
+      title: tip,
       icon: "none"
     });
   },
@@ -613,12 +628,19 @@ Page({
 
   toAddRelation() {
     var cat_id = this.data.cat._id;
-    const url = `/pages/manage/addRelations/addRelations?cat_id=${cat_id}`;
+    const url = `/pages/manage/catManage/catManage?cat_id=${cat_id}&activeTab=relation`;
     wx.navigateTo({
       url: url,
     });
   },
 
+  //弹出层
+  showFunction() {
+    this.setData({ showFunc: true });
+  },
+  closeFunction() {
+    this.setData({ showFunc: false });
+  },
   async loadUser() {
     var user = await getUser({
       nocache: true,
@@ -627,8 +649,16 @@ Page({
     if (!user.userInfo) {
       user.userInfo = {};
     }
+    // 处理关注
+    let followedCat;
+    if (!user.followCats || !user.followCats.includes(this.data.cat._id)) {
+      followedCat = false;
+    } else {
+      followedCat = true;
+    }
     this.setData({
-      user: user
+      user,
+      followedCat
     });
   },
 
@@ -652,7 +682,7 @@ Page({
       await this.loadUser();
     }
     this.setData({
-      userBadges: await loadUserBadge(this.data.user.openid, this.jsData.badgeDefMap, {keepZero: true}),
+      userBadges: await loadUserBadge(this.data.user.openid, this.jsData.badgeDefMap, { keepZero: true }),
     });
   },
 
@@ -669,7 +699,7 @@ Page({
       catId: this.data.cat._id,
       badgeDef: badgeDef
     });
-    if (res.result.ok) {
+    if (res.ok) {
       wx.showToast({
         title: '赠予成功',
         icon: "success"
@@ -704,7 +734,7 @@ Page({
   // 点击获取徽章
   async toGetBadge(e) {
     wx.navigateTo({
-      url: '/pages/info/badge/badge',
+      url: '/pages/packageA/pages/info/badge/badge',
     });
   },
 
@@ -725,7 +755,7 @@ Page({
   },
 
   async bindTapUserBadge(e) {
-    let {index} = e.currentTarget.dataset;
+    let { index } = e.currentTarget.dataset;
     if (this.data.userBadges[index].count === 0) {
       wx.showToast({
         title: '请先获取该徽章~',
@@ -775,7 +805,7 @@ Page({
 
   // 展示弹窗
   showBadgeModal(e) {
-    const {index} = e.currentTarget.dataset;
+    const { index } = e.currentTarget.dataset;
     const badge = this.data.catBadges[index];
     const modal = {
       show: true,
@@ -786,6 +816,123 @@ Page({
       level: badge.level,
       tip: `共拥有${badge.count}枚`,
     };
-    this.setData({modal});
+    this.setData({ modal });
+  },
+  hideBadgeModal() {
+    this.triggerEvent('close');
+  },
+  bindDetailRating(e) {
+    let { showDetailRating } = this.data;
+
+    this.setData({
+      showDetailRating: !showDetailRating,
+    });
+  },
+
+  // 展示分享海报
+  async showPoster() {
+    // 关掉弹窗
+    this.closeFunction();
+    let posterComponent = this.selectComponent('#posterComponent');
+    if (posterComponent) {
+      posterComponent.startDrawing();
+    }
+  },
+
+  async followCat() {
+    if (this.jsData.updatingFollowCats) {
+      return;
+    }
+
+    // 如果关注过多，禁止再继续新增关注
+    let { followCats } = this.data.user;
+    if (followCats && followCats.length > max_follow_cats) {
+      wx.showModal({
+        title: '关注已满',
+        content: `最多关注${max_follow_cats}只猫猫，请到关于页-个人中心管理已关注的猫猫。`,
+      });
+      return false;
+    }
+
+    this.jsData.updatingFollowCats = true;
+
+    let { followedCat } = this.data;
+    let res = await api.updateFollowCats({
+      updateCmd: followedCat ? "del" : "add",
+      catId: this.data.cat._id,
+    })
+
+    await Promise.all([
+      await this.loadUser(),
+      await this.loadFollowCount(),
+    ]);
+
+    wx.showToast({
+      title: `${followedCat ? "取关" : "关注"}${res ? "成功" : "失败"}`,
+      icon: res ? "success" : "error"
+    });
+    this.jsData.updatingFollowCats = false;
+  },
+
+  // 获取最新疫苗记录
+  async getLatestVaccine(cat_id) {
+    try {
+      const result = await api.vaccineOp({
+        operation: 'list',
+        cat_id: cat_id
+      });
+
+      if (result?.result === true && Array.isArray(result.data) && result.data.length > 0) {
+        // 处理所有疫苗记录的日期格式
+        const vaccineHistory = result.data.map(vaccine => {
+          // 判断疫苗是否过期
+          const today = new Date();
+          const expireDate = vaccine.expire_date ? new Date(vaccine.expire_date) : null;
+          const is_expired = expireDate ? today > expireDate : false;
+          return {
+            ...vaccine,
+            vaccine_date_formatted: vaccine.vaccine_date ? formatDate(vaccine.vaccine_date, "yyyy-MM-dd") : '',
+            expire_date_formatted: vaccine.expire_date ? formatDate(vaccine.expire_date, "yyyy-MM-dd") : '',
+            next_vaccine_date_formatted: vaccine.next_vaccine_date ? formatDate(vaccine.next_vaccine_date, "yyyy-MM-dd") : '',
+            is_expired
+          };
+        });
+
+        // 按日期排序
+        vaccineHistory.sort((a, b) => {
+          const dateA = a.vaccine_date ? new Date(a.vaccine_date).getTime() : 0;
+          const dateB = b.vaccine_date ? new Date(b.vaccine_date).getTime() : 0;
+          return dateB - dateA;
+        });
+
+        // 保存所有疫苗记录
+        this.setData({
+          vaccineHistory
+        });
+
+        // 设置最新的疫苗记录
+        if (vaccineHistory[0] && vaccineHistory[0].vaccine_date) {
+          this.setData({
+            'cat.lastVaccine': vaccineHistory[0]
+          });
+        }
+      }
+    } catch (error) {
+      console.error('获取疫苗记录失败:', error);
+    }
+  },
+
+  // 显示疫苗记录历史
+  toVaccineDetail() {
+    this.setData({
+      showVaccineHistory: true
+    });
+  },
+
+  // 隐藏疫苗记录历史
+  hideVaccineHistory() {
+    this.setData({
+      showVaccineHistory: false
+    });
   },
 })

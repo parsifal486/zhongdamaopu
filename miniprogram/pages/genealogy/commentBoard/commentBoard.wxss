@@ -21,6 +21,7 @@ page {
     -webkit-linear-gradient(top, white 38rpx, var(--color-gray) 40rpx);
   background-size: 100% 40rpx;
   position: relative;
+  filter: drop-shadow(0rpx 12rpx 10rpx var(--color-ltblack-transparent));
 }
 
 .comment .tape {
@@ -64,6 +65,16 @@ page {
   flex-direction: row;
   align-items: center;
   box-sizing: border-box;
+}
+.user-info .user-avatar {
+  width: 40rpx;
+  height: 40rpx;
+}
+.user-info image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: white;
 }
 
 .username {
@@ -187,7 +198,7 @@ page {
   font-size: 28rpx;
   font-weight: bold;
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-text-onPrimary);
   border-radius: 50rpx;
 }
 
@@ -197,6 +208,7 @@ button.long {
 
 button.primary {
   background-color: var(--color-primary);
+  color: var(--color-text-onPrimary);
 }
 
 /* 多种颜色的纸 */

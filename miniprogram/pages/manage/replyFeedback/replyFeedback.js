@@ -2,17 +2,15 @@
 import { formatDate } from "../../../utils/utils";
 import { sendReplyNotice } from "../../../utils/msg";
 import { checkAuth, getUserInfo } from "../../../utils/user";
-import { cloud } from "../../../utils/cloudAccess";
 import api from "../../../utils/cloudApi";
 
+const app = getApp();
 Page({
 
   /**
    * 页面的初始数据
    */
   data: {
-    tipText: '正在鉴权...',
-    tipBtn: false,
     feedback: undefined,
     maxlength: 300,
     length: 0,
@@ -27,25 +25,20 @@ Page({
     }
   },
 
-  // 没有权限，返回上一页
-  goBack() {
-    wx.navigateBack();
-  },
-
   async reload(options) {
     wx.showLoading({
       title: '加载中...',
     });
-    const db = await cloud.databaseAsync();
-    var res = await db.collection('feedback').doc(options.fb_id).get();
-    console.log(res);
-    if (!res.data.userInfo) {
-      res.data.userInfo = (await getUserInfo(res.data.openid)).userInfo;
+    var { result } = await app.mpServerless.db.collection('feedback').findOne({
+      _id: options.fb_id
+    })
+    if (!result.userInfo) {
+      result.userInfo = (await getUserInfo(result.openid)).userInfo;
     }
-    
-    res.data.openDateStr = formatDate(res.data.openDate, "yyyy-MM-dd hh:mm:ss");
+
+    result.openDateStr = formatDate(result.openDate, "yyyy-MM-dd hh:mm:ss");
     this.setData({
-      feedback: res.data
+      feedback: result
     });
     wx.hideLoading();
   },
@@ -77,20 +70,37 @@ Page({
         title: '正在提交...',
         mask: true
       });
+      console.log("open_id:", this.data.feedback._openid)
+      console.log("feedback_id:",  this.data.feedback._id)
       let res = await sendReplyNotice(this.data.feedback._openid, this.data.feedback._id);
+      console.log("res:", res)
       console.log("[bindReply] - sendReplyNotice res", res);
+      console.log("code:", res.apiResponse.errCode)
       const that = this;
-      if (res.errCode == 0) {
+      if (res.apiResponse.errCode == 0) {
         // 记录一下回复的内容和时间
         await api.curdOp({
           operation: 'update',
           collection: "feedback",
-          item_id: that.data.feedback._id, 
+          item_id: that.data.feedback._id,
           data: {
             replyDate: api.getDate(),
             replyInfo: submitData.replyInfo,
           }
         });
+
+        // 直接调用标记为已处理函数，避免网络延迟导致的重回复bug   
+        // dataTime : 2025/09/05 20:53 
+        // author: Light_House
+        await this.bindCheck();
+
+        // 发送刷新事件
+        app.globalData.eventBus.$emit('feedbackUpdated', {
+          id: this.data.feedback._id,
+          action: 'reply',
+          replyInfo: submitData.replyInfo
+        });
+
         wx.hideLoading();
         wx.showToast({
           title: '回复成功',
@@ -100,7 +110,7 @@ Page({
             setTimeout(wx.navigateBack, 1000)
           }
         })
-      } else {
+      } else if ((res.apiResponse.errCode == 43101)){
         wx.hideLoading();
         wx.showToast({
           title: '回复失败，这可能是因为对方没有订阅或次数耗尽',
@@ -110,9 +120,36 @@ Page({
             setTimeout(wx.navigateBack, 1500)
           }
         });
+      } else {
+        wx.hideLoading();
+        wx.showToast({
+          title: '回复失败，errCode：' + res.apiResponse.errCode,
+          icon: 'none',
+          duration: 1500,
+          success: () => {
+            setTimeout(wx.navigateBack, 1500)
+          }
+        });
       }
     }
-  }
+  },
 
+  async bindCheck() {
+    const feedback = this.data.feedback;
+    
+    console.log('[bindCheck] - 确认反馈处理');
+    
+    // 更新反馈状态为已处理
+    await api.curdOp({
+      operation: 'update',
+      collection: "feedback",
+      item_id: feedback._id,
+      data: {
+        dealed: true,
+        dealDate: api.getDate()
+      }
+    });
+
+  }
 })
 

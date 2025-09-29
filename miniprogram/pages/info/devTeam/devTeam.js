@@ -10,6 +10,134 @@ Page({
     text_cfg: text_cfg,
     github_link: "https://github.com/sysucats/zhongdamaopu",
     update_log: [{
+      version: "v1.16.4",
+      content: [
+        "修复已知BUG（感谢LightHouse-1024、xuannfx）",
+      ],
+      time: "2024/9/29"
+    }, {
+      version: "v1.16.3",
+      content: [
+        "修复徽章BUG（LightHouse-1024大佬提供）",
+        "修复云函数已知问题",
+      ],
+      time: "2024/6/29"
+    }, {
+      version: "v1.16.2",
+      content: [
+        "修复部分BUG",
+        "修复部署指引，准备发布EMAS版",
+      ],
+      time: "2024/6/29"
+    }, {
+      version: "v1.16.1",
+      content: [
+        "修复部分BUG，修改后端为按量付费",
+      ],
+      time: "2024/6/26"
+    }, {
+      version: "v1.16.0",
+      content: [
+        "迁移到EMAS，感谢Smileye-v大佬",
+      ],
+      time: "2024/6/23"
+    }, {
+      version: "v1.15.1",
+      content: [
+        "统一主题色背景的文字颜色变量",
+      ],
+      time: "2024/3/14"
+    }, {
+      version: "v1.15.0",
+      content: [
+        "猫猫详情页面支持查看疫苗记录",
+        "优化猫猫详情页面样式和弹窗组件交互",
+        "重构管理页面目录结构",
+        "修复mask组件的事件穿透问题",
+        "优化喵友圈页面性能和缓存策略",
+        "统一管理页面权限提示样式",
+      ],
+      time: "2024/3/14"
+    }, {
+      version: "v1.14.4",
+      content: [
+        "修复版本控制功能"
+      ],
+      time: "2024/11/16"
+    }, {
+      version: "v1.14.3",
+      content: [
+        "更新个人主页（xuann大佬提供）"
+      ],
+      time: "2024/11/03"
+    }, {
+      version: "v1.14.2",
+      content: [
+        "更新喵友圈UI（xuann大佬提供）",
+      ],
+      time: "2024/07/14"
+    }, {
+      version: "v1.14.1",
+      content: [
+        "更新喵友圈UI",
+        "更新关注数",
+        "代码分包优化",
+      ],
+      time: "2024/06/29"
+    }, {
+      version: "v1.14.0",
+      content: [
+        "新增喵ID海报生成功能（xuann大佬提供）",
+        "新增关注猫猫功能",
+        "尝试解决缓存问题",
+      ],
+      time: "2024/06/14"
+    }, {
+      version: "v1.13.4",
+      content: [
+        "修复用户头像设置问题",
+      ],
+      time: "2024/06/03"
+    }, {
+      version: "v1.13.3",
+      content: [
+        "修复猫猫部分UI问题",
+        "修复重复评分bug",
+      ],
+      time: "2024/05/22"
+    }, {
+      version: "v1.13.2",
+      content: [
+        "增加猫猫评分",
+      ],
+      time: "2024/05/19"
+    }, {
+      version: "v1.13.1",
+      content: [
+        "修改关于页统计数和文档链接",
+      ],
+      time: "2024/05/18"
+    }, {
+      version: "v1.13.0",
+      content: [
+        "合入xuann大佬的PR",
+        "关于页UI设计改头换面",
+      ],
+      time: "2024/05/18"
+    }, {
+      version: "v1.12.13",
+      content: [
+        "修复照片处理小bug",
+        "优化首页白屏提示",
+      ],
+      time: "2024/04/21"
+    }, {
+      version: "v1.12.12",
+      content: [
+        "尝试修复首页白屏问题",
+      ],
+      time: "2024/02/17"
+    }, {
       version: "v1.12.11",
       content: [
         "徽章榜单也按时间划分",

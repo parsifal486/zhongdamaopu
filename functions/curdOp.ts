@@ -18,10 +18,12 @@ const permissionNeed = {
     "photo": 0,
     "photo_rank": 3,
     "badge_code": 99,
+    "rating": 0,
     "reward": 3,
     "science": 3,
     "setting": 3,
     "user": 0,
+    "vaccine": 2,
   },
   "update": {
     "badge_def": 2,
@@ -33,10 +35,12 @@ const permissionNeed = {
     "photo": 1,
     "photo_rank": 1,
     "badge_code": 3,
+    "rating": 1,
     "reward": 1,
     "science": 1,
     "setting": 99,
     "user": 1,
+    "vaccine": 2,
   },
   "remove": {
     "badge_def": 2,
@@ -48,10 +52,12 @@ const permissionNeed = {
     "photo": 1,
     "photo_rank": 1,
     "badge_code": 99,
+    "rating": 99,
     "reward": 99,
     "science": 99,
     "setting": 99,
     "user": 1,
+    "vaccine": 2,
   },
   "set": {
     "badge_def": 2,
@@ -63,10 +69,12 @@ const permissionNeed = {
     "photo": 1,
     "photo_rank": 1,
     "badge_code": 99,
+    "rating": 99,
     "reward": 1,
     "science": 1,
     "setting": 1,
     "user": 1,
+    "vaccine": 2,
   },
   "inc": {
     "badge_def": 2,
@@ -78,13 +86,16 @@ const permissionNeed = {
     "photo": 0,
     "photo_rank": 1,
     "badge_code": 99,
+    "rating": 99,
     "reward": 1,
     "science": 1,
     "setting": 99,
     "user": 1,
+    "vaccine": 99,
   },
   "read": {
     "badge_code": 3,
+    "vaccine": 0,
   }
 }
 
@@ -92,7 +103,8 @@ const permissionNeed = {
 const permissionAuthor = {
   "add": {},
   "update": {
-    "feedback": true
+    "feedback": true,
+    "rating": true,
   },
   "remove": {
     "comment": true
@@ -107,12 +119,15 @@ export default async function (ctx: FunctionContext) {
 
   if (body && body.deploy_test === true) {
     // 进行部署检查
-    return "v1.4";
+    return "v1.5";
   }
 
-  var openid = ctx.user.openid;  // 用户的 OpenID
+  var openid = ctx.user?.openid;  // 用户的 OpenID
 
   const collection = body.collection;
+  if (!collection) {
+    return "no collection name.";
+  }
   const operation = body.operation;  // DB 操作 ["add", "update", "remove", "set", "inc", "read"]
   const permissionLevel = permissionNeed[operation][collection];  // 操作要求的最低权限
   console.log("permissionLevel:", permissionLevel)
